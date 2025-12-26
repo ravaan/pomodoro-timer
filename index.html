@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Pomodoro Timer - A productivity timer with task tracking using the 25/5/15 technique">
+  <meta name="theme-color" content="#0f1419">
+  <title>Pomodoro Timer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header with toggles -->
+  <header class="header">
+    <div class="header-toggles">
+      <button class="toggle-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme (T)">
+        <span class="toggle-icon">🌙</span>
+      </button>
+      <button class="toggle-btn" id="sound-toggle" aria-label="Toggle sound" title="Toggle sound (M)">
+        <span class="toggle-icon">♪</span>
+      </button>
+      <button class="toggle-btn" id="notification-toggle" aria-label="Toggle notifications" title="Toggle notifications">
+        <span class="toggle-icon">🔔</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="main">
+    <!-- Timer Section -->
+    <section class="timer-section" aria-label="Timer">
+      <!-- Circular Progress Ring -->
+      <div class="timer-container">
+        <svg class="progress-ring" viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="progress-ring-bg" cx="100" cy="100" r="90" />
+          <circle class="progress-ring-progress" cx="100" cy="100" r="90" />
+        </svg>
+        <div class="timer-display">
+          <time class="timer-time" id="timer-time" aria-live="polite">25:00</time>
+          <div class="timer-label" id="timer-label">Work</div>
+          <div class="timer-session" id="timer-session">Session 1/4</div>
+        </div>
+      </div>
+
+      <!-- Session Calendar View -->
+      <div class="session-calendar" aria-label="Session progress">
+        <div class="session-dot" data-session="1"></div>
+        <div class="session-dot" data-session="2"></div>
+        <div class="session-dot" data-session="3"></div>
+        <div class="session-dot" data-session="4"></div>
+      </div>
+
+      <!-- Timer Controls -->
+      <div class="timer-controls">
+        <button class="control-btn control-btn-primary" id="start-btn" aria-label="Start timer">
+          Start
+        </button>
+        <button class="control-btn" id="skip-btn" aria-label="Skip to next session" title="Skip (N)">
+          Skip
+        </button>
+        <button class="control-btn" id="reset-btn" aria-label="Reset current session" title="Reset (R)">
+          Reset
+        </button>
+        <button class="control-btn" id="stop-btn" aria-label="Stop timer completely" title="Stop (S)">
+          Stop
+        </button>
+      </div>
+
+      <!-- Customization Button -->
+      <button class="customize-btn" id="customize-btn" aria-label="Customize timer durations" title="Customize (C)">
+        ⚙️ Customize
+      </button>
+    </section>
+
+    <!-- Task Section -->
+    <section class="task-section" aria-label="Tasks">
+      <h2 class="section-title">Tasks</h2>
+
+      <!-- Add Task -->
+      <form class="add-task-form" id="add-task-form">
+        <input
+          type="text"
+          class="task-input"
+          id="task-input"
+          placeholder="Add a new task..."
+          maxlength="100"
+          aria-label="New task name"
+        >
+        <button type="submit" class="add-task-btn" aria-label="Add task">+</button>
+      </form>
+
+      <!-- Task List -->
+      <ul class="task-list" id="task-list" role="list" aria-label="Task list">
+        <!-- Tasks will be rendered here -->
+      </ul>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-section" id="stats-section" aria-label="Statistics">
+      <h2 class="section-title">Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-sessions-today">0</div>
+          <div class="stat-label">Sessions Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-focus-today">0m</div>
+          <div class="stat-label">Focus Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-sessions-total">0</div>
+          <div class="stat-label">Total Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-focus-total">0h</div>
+          <div class="stat-label">Total Focus</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-streak">0</div>
+          <div class="stat-label">Day Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-tasks-completed">0</div>
+          <div class="stat-label">Tasks Done</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Session History (Footer) -->
+  <footer class="footer">
+    <section class="history-section" id="history-section" aria-label="Session history">
+      <button class="section-toggle" id="history-toggle" aria-expanded="true" aria-controls="history-content">
+        <h2 class="section-title">Session History</h2>
+        <span class="toggle-arrow">▼</span>
+      </button>
+      <div class="history-content" id="history-content">
+        <ul class="history-list" id="history-list" role="list" aria-label="Session history list">
+          <!-- History items will be rendered here -->
+        </ul>
+        <p class="history-empty" id="history-empty">No sessions recorded yet. Start your first Pomodoro!</p>
+      </div>
+    </section>
+
+    <!-- Keyboard Shortcuts Hint -->
+    <div class="shortcuts-hint">
+      Press <kbd>?</kbd> for keyboard shortcuts
+    </div>
+  </footer>
+
+  <!-- Customization Modal -->
+  <div class="modal-overlay" id="customize-modal" role="dialog" aria-modal="true" aria-labelledby="customize-title" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="customize-title">Customize Timer</h2>
+        <button class="modal-close" id="customize-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="work-duration">Work Duration (minutes)</label>
+          <input type="number" id="work-duration" min="1" max="60" value="25">
+        </div>
+        <div class="form-group">
+          <label for="short-break-duration">Short Break (minutes)</label>
+          <input type="number" id="short-break-duration" min="1" max="60" value="5">
+        </div>
+        <div class="form-group">
+          <label for="long-break-duration">Long Break (minutes)</label>
+          <input type="number" id="long-break-duration" min="1" max="60" value="15">
+        </div>
+        <div class="form-divider"></div>
+        <div class="form-group form-group-toggle">
+          <label for="setting-sound">Sound Effects</label>
+          <input type="checkbox" id="setting-sound" checked>
+        </div>
+        <div class="form-group form-group-toggle">
+          <label for="setting-notifications">Browser Notifications</label>
+          <input type="checkbox" id="setting-notifications">
+        </div>
+        <div class="form-group form-group-toggle">
+          <label for="setting-flash">Screen Flash</label>
+          <input type="checkbox" id="setting-flash" checked>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="customize-reset">Reset to Defaults</button>
+        <button class="btn btn-primary" id="customize-save">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div class="modal-overlay" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+    <div class="modal modal-large">
+      <div class="modal-header">
+        <h2 class="modal-title" id="help-title">Keyboard Shortcuts</h2>
+        <button class="modal-close" id="help-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <table class="shortcuts-table">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>Space</kbd></td><td>Start/Pause timer</td></tr>
+            <tr><td><kbd>R</kbd></td><td>Reset current session</td></tr>
+            <tr><td><kbd>N</kbd></td><td>Skip to next session</td></tr>
+            <tr><td><kbd>S</kbd></td><td>Stop timer completely</td></tr>
+            <tr><td><kbd>A</kbd></td><td>Add new task</td></tr>
+            <tr><td><kbd>1</kbd>-<kbd>9</kbd></td><td>Toggle task checkbox</td></tr>
+            <tr><td><kbd>T</kbd></td><td>Toggle theme</td></tr>
+            <tr><td><kbd>M</kbd></td><td>Toggle sound (mute)</td></tr>
+            <tr><td><kbd>C</kbd></td><td>Open customization</td></tr>
+            <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Close modal</td></tr>
+          </tbody>
+        </table>
+        <div class="mobile-hints">
+          <h3>Mobile Gestures</h3>
+          <p>Swipe left on timer to skip session</p>
+          <p>Swipe right on timer to reset session</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Mobile Bottom Sheet for Tasks -->
+  <div class="bottom-sheet-overlay" id="bottom-sheet-overlay" hidden></div>
+  <div class="bottom-sheet" id="bottom-sheet" hidden>
+    <div class="bottom-sheet-handle"></div>
+    <div class="bottom-sheet-header">
+      <h2>Tasks</h2>
+      <button class="bottom-sheet-close" id="bottom-sheet-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="bottom-sheet-content" id="bottom-sheet-content">
+      <!-- Mobile task list will be cloned here -->
+    </div>
+  </div>
+
+  <!-- Mobile Task Button -->
+  <button class="mobile-task-btn" id="mobile-task-btn" aria-label="Open tasks" hidden>
+    📋 Tasks
+  </button>
+
+  <script src="app.js"></script>
+</body>
+</html>
