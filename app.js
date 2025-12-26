@@ -23,6 +23,334 @@
   const PROGRESS_CIRCUMFERENCE = 565.48;
 
   // ==========================================================================
+  // Analytics (Mixpanel)
+  // ==========================================================================
+  const Analytics = {
+    // Initialize Mixpanel with project token
+    init() {
+      // Replace with your Mixpanel project token
+      const MIXPANEL_TOKEN = 'YOUR_MIXPANEL_PROJECT_TOKEN';
+
+      if (typeof mixpanel !== 'undefined' && MIXPANEL_TOKEN !== 'YOUR_MIXPANEL_PROJECT_TOKEN') {
+        mixpanel.init(MIXPANEL_TOKEN, {
+          debug: false,
+          track_pageview: true,
+          persistence: 'localStorage'
+        });
+
+        // Set super properties (sent with every event)
+        mixpanel.register({
+          'App Version': '1.0.0',
+          'Platform': this.getPlatform(),
+          'Screen Width': window.innerWidth,
+          'Screen Height': window.innerHeight
+        });
+
+        // Track app open
+        this.track('App Opened', {
+          'Referrer': document.referrer || 'direct',
+          'URL': window.location.href
+        });
+      }
+    },
+
+    // Get platform type
+    getPlatform() {
+      const ua = navigator.userAgent;
+      if (/iPhone|iPad|iPod/.test(ua)) return 'iOS';
+      if (/Android/.test(ua)) return 'Android';
+      if (/Mac/.test(ua)) return 'macOS';
+      if (/Win/.test(ua)) return 'Windows';
+      if (/Linux/.test(ua)) return 'Linux';
+      return 'Unknown';
+    },
+
+    // Core tracking function
+    track(eventName, properties = {}) {
+      if (typeof mixpanel !== 'undefined' && mixpanel.track) {
+        // Add common properties
+        const enrichedProps = {
+          ...properties,
+          'Timestamp': new Date().toISOString(),
+          'Theme': state.theme,
+          'Focus Mode': state.focusMode,
+          'Sound Enabled': state.soundEnabled,
+          'Notifications Enabled': state.notificationsEnabled
+        };
+        mixpanel.track(eventName, enrichedProps);
+      }
+    },
+
+    // Timer Events
+    timerStarted(sessionType, duration, isResume = false) {
+      this.track('Timer Started', {
+        'Session Type': sessionType,
+        'Duration (minutes)': Math.round(duration / 60000),
+        'Session Number': state.sessionCount,
+        'Is Resume': isResume,
+        'Has Active Task': !!state.activeTaskId,
+        'Total Tasks': state.tasks.length,
+        'Incomplete Tasks': state.tasks.filter(t => !t.completed).length
+      });
+    },
+
+    timerPaused(sessionType, remainingTime, elapsedTime) {
+      this.track('Timer Paused', {
+        'Session Type': sessionType,
+        'Remaining Time (seconds)': Math.round(remainingTime / 1000),
+        'Elapsed Time (seconds)': Math.round(elapsedTime / 1000),
+        'Session Number': state.sessionCount,
+        'Pause Reason': 'manual'
+      });
+    },
+
+    timerReset(sessionType, remainingTime) {
+      this.track('Timer Reset', {
+        'Session Type': sessionType,
+        'Time Remaining (seconds)': Math.round(remainingTime / 1000),
+        'Session Number': state.sessionCount,
+        'Was Running': state.isRunning
+      });
+    },
+
+    timerSkipped(sessionType, remainingTime) {
+      this.track('Timer Skipped', {
+        'Session Type': sessionType,
+        'Time Remaining (seconds)': Math.round(remainingTime / 1000),
+        'Session Number': state.sessionCount,
+        'Skipped Early': remainingTime > 0
+      });
+    },
+
+    timerStopped(sessionType, sessionCount) {
+      this.track('Timer Stopped', {
+        'Session Type': sessionType,
+        'Sessions Completed': sessionCount - 1,
+        'Full Reset': true
+      });
+    },
+
+    sessionCompleted(sessionType, duration, taskId) {
+      const task = state.tasks.find(t => t.id === taskId);
+      this.track('Session Completed', {
+        'Session Type': sessionType,
+        'Duration (minutes)': Math.round(duration / 60000),
+        'Session Number': state.sessionCount,
+        'Task Name': task?.text || null,
+        'Task Sessions': task?.sessionsSpent || 0,
+        'Is Work Session': sessionType === SESSION_TYPES.WORK
+      });
+
+      // Track milestone events
+      if (sessionType === SESSION_TYPES.WORK) {
+        const totalWorkSessions = state.sessions.filter(s => s.type === SESSION_TYPES.WORK).length + 1;
+        if ([1, 5, 10, 25, 50, 100].includes(totalWorkSessions)) {
+          this.track('Milestone Reached', {
+            'Milestone Type': 'Work Sessions',
+            'Count': totalWorkSessions
+          });
+        }
+      }
+    },
+
+    // Task Events
+    taskAdded(taskText) {
+      this.track('Task Added', {
+        'Task Length': taskText.length,
+        'Total Tasks': state.tasks.length,
+        'Incomplete Tasks': state.tasks.filter(t => !t.completed).length
+      });
+    },
+
+    taskCompleted(task, sessionsSpent) {
+      this.track('Task Completed', {
+        'Task Length': task.text.length,
+        'Sessions Spent': sessionsSpent,
+        'Was Active Task': task.id === state.activeTaskId,
+        'Time Since Created': this.getTimeSince(task.createdAt)
+      });
+    },
+
+    taskUncompleted(task) {
+      this.track('Task Uncompleted', {
+        'Task Length': task.text.length,
+        'Sessions Spent': task.sessionsSpent
+      });
+    },
+
+    taskEdited(task, oldText, newText) {
+      this.track('Task Edited', {
+        'Old Length': oldText.length,
+        'New Length': newText.length,
+        'Sessions Spent': task.sessionsSpent,
+        'Was Completed': task.completed
+      });
+    },
+
+    taskDeleted(task) {
+      this.track('Task Deleted', {
+        'Task Length': task.text.length,
+        'Sessions Spent': task.sessionsSpent,
+        'Was Completed': task.completed,
+        'Was Active': task.id === state.activeTaskId
+      });
+    },
+
+    taskSelected(task) {
+      this.track('Task Selected', {
+        'Task Length': task.text.length,
+        'Sessions Spent': task.sessionsSpent,
+        'Incomplete Tasks': state.tasks.filter(t => !t.completed).length
+      });
+    },
+
+    taskDeselected() {
+      this.track('Task Deselected', {});
+    },
+
+    // Settings Events
+    themeChanged(newTheme, oldTheme) {
+      this.track('Theme Changed', {
+        'New Theme': newTheme,
+        'Old Theme': oldTheme
+      });
+    },
+
+    focusModeToggled(enabled) {
+      this.track('Focus Mode Toggled', {
+        'Enabled': enabled,
+        'Timer Running': state.isRunning
+      });
+    },
+
+    soundToggled(enabled) {
+      this.track('Sound Toggled', {
+        'Enabled': enabled
+      });
+    },
+
+    notificationsToggled(enabled, permissionStatus) {
+      this.track('Notifications Toggled', {
+        'Enabled': enabled,
+        'Permission Status': permissionStatus
+      });
+    },
+
+    settingsSaved(durations, previousDurations) {
+      this.track('Settings Saved', {
+        'Work Duration': durations.work,
+        'Short Break Duration': durations.shortBreak,
+        'Long Break Duration': durations.longBreak,
+        'Work Duration Changed': durations.work !== previousDurations.work,
+        'Short Break Changed': durations.shortBreak !== previousDurations.shortBreak,
+        'Long Break Changed': durations.longBreak !== previousDurations.longBreak,
+        'Sound Enabled': state.soundEnabled,
+        'Notifications Enabled': state.notificationsEnabled,
+        'Flash Enabled': state.flashEnabled
+      });
+    },
+
+    settingsReset() {
+      this.track('Settings Reset', {
+        'Reset To Defaults': true
+      });
+    },
+
+    settingsOpened() {
+      this.track('Settings Opened', {});
+    },
+
+    // UI Events
+    helpOpened(trigger) {
+      this.track('Help Opened', {
+        'Trigger': trigger // 'keyboard', 'typed_help', 'button'
+      });
+    },
+
+    keyboardShortcutUsed(key, action) {
+      this.track('Keyboard Shortcut Used', {
+        'Key': key,
+        'Action': action
+      });
+    },
+
+    historyToggled(expanded) {
+      this.track('History Toggled', {
+        'Expanded': expanded,
+        'Session Count': state.sessions.length
+      });
+    },
+
+    historyCleared(sessionCount) {
+      this.track('History Cleared', {
+        'Sessions Cleared': sessionCount
+      });
+    },
+
+    // Mobile Events
+    swipeGesture(direction, action) {
+      this.track('Swipe Gesture', {
+        'Direction': direction,
+        'Action': action
+      });
+    },
+
+    bottomSheetOpened() {
+      this.track('Bottom Sheet Opened', {
+        'Task Count': state.tasks.length
+      });
+    },
+
+    bottomSheetClosed() {
+      this.track('Bottom Sheet Closed', {});
+    },
+
+    // Engagement Events
+    pageVisibilityChanged(visible) {
+      this.track('Page Visibility Changed', {
+        'Visible': visible,
+        'Timer Running': state.isRunning,
+        'Timer Paused': state.isPaused
+      });
+    },
+
+    // Helper function
+    getTimeSince(isoDate) {
+      const created = new Date(isoDate);
+      const now = new Date();
+      const diffMs = now - created;
+      const diffMins = Math.round(diffMs / 60000);
+      if (diffMins < 60) return `${diffMins} minutes`;
+      const diffHours = Math.round(diffMins / 60);
+      if (diffHours < 24) return `${diffHours} hours`;
+      const diffDays = Math.round(diffHours / 24);
+      return `${diffDays} days`;
+    },
+
+    // Set user properties (for identified users)
+    setUserProperties() {
+      if (typeof mixpanel !== 'undefined' && mixpanel.people) {
+        const totalWorkSessions = state.sessions.filter(s => s.type === SESSION_TYPES.WORK).length;
+        const totalFocusMinutes = state.sessions
+          .filter(s => s.type === SESSION_TYPES.WORK)
+          .reduce((sum, s) => sum + s.duration, 0);
+
+        mixpanel.people.set({
+          'Total Work Sessions': totalWorkSessions,
+          'Total Focus Minutes': Math.round(totalFocusMinutes),
+          'Total Tasks Created': state.tasks.length,
+          'Tasks Completed': state.tasks.filter(t => t.completed).length,
+          'Preferred Theme': state.theme,
+          'Work Duration Setting': state.durations.work,
+          'Last Active': new Date().toISOString()
+        });
+
+        mixpanel.people.increment('App Opens');
+      }
+    }
+  };
+
+  // ==========================================================================
   // State
   // ==========================================================================
   let state = {
@@ -165,11 +493,15 @@
   function cycleTheme() {
     const themes = ['dark', 'light'];
     const idx = themes.indexOf(state.theme);
+    const oldTheme = state.theme;
     state.theme = themes[(idx + 1) % themes.length];
     applyTheme();
     save(STORAGE_KEYS.THEME, state.theme);
     playSound('click');
     showToast(`${state.theme} theme`);
+
+    // Analytics: Theme Changed
+    Analytics.themeChanged(state.theme, oldTheme);
   }
 
   // ==========================================================================
@@ -183,6 +515,9 @@
     }
     playSound('click');
     showToast(state.focusMode ? 'Focus mode' : 'Normal mode');
+
+    // Analytics: Focus Mode Toggled
+    Analytics.focusModeToggled(state.focusMode);
   }
 
   function renderFocusTasks() {
@@ -303,6 +638,9 @@
     updateSoundIcon();
     if (state.soundEnabled) playSound('click');
     showToast(state.soundEnabled ? 'Sound on' : 'Sound off');
+
+    // Analytics: Sound Toggled
+    Analytics.soundToggled(state.soundEnabled);
   }
 
   // ==========================================================================
@@ -317,16 +655,19 @@
     if (!state.notificationsEnabled) {
       if (!('Notification' in window)) {
         showToast('Not supported');
+        Analytics.notificationsToggled(false, 'not_supported');
         return;
       }
       if (Notification.permission === 'denied') {
         showToast('Blocked in browser');
+        Analytics.notificationsToggled(false, 'denied');
         return;
       }
       if (Notification.permission === 'default') {
         const perm = await Notification.requestPermission();
         if (perm !== 'granted') {
           showToast('Permission denied');
+          Analytics.notificationsToggled(false, 'permission_denied');
           return;
         }
       }
@@ -336,6 +677,9 @@
     }
     save(STORAGE_KEYS.NOTIFICATIONS, state.notificationsEnabled);
     showToast(state.notificationsEnabled ? 'Notifications on' : 'Notifications off');
+
+    // Analytics: Notifications Toggled
+    Analytics.notificationsToggled(state.notificationsEnabled, Notification.permission);
   }
 
   function sendNotification(title, body) {
@@ -432,6 +776,7 @@
     state.isRunning = true;
     state.isPaused = false;
 
+    const isResume = !!state.pausedTime;
     if (state.pausedTime) {
       state.startTime = performance.now() - (state.totalDuration - state.remainingTime);
     } else {
@@ -439,6 +784,9 @@
       playSound('start');
       showToast(`${state.sessionType === SESSION_TYPES.WORK ? 'Work' : 'Break'} started`);
     }
+
+    // Analytics: Timer Started
+    Analytics.timerStarted(state.sessionType, state.totalDuration, isResume);
 
     state.pausedTime = null;
     updatePlayPauseIcon();
@@ -470,6 +818,7 @@
 
   function pauseTimer() {
     if (!state.isRunning) return;
+    const elapsedTime = state.totalDuration - state.remainingTime;
     state.isRunning = false;
     state.isPaused = true;
     state.pausedTime = performance.now();
@@ -477,9 +826,15 @@
     updatePlayPauseIcon();
     playSound('pause');
     showToast('Paused');
+
+    // Analytics: Timer Paused
+    Analytics.timerPaused(state.sessionType, state.remainingTime, elapsedTime);
   }
 
   function resetTimer() {
+    // Analytics: Timer Reset (capture before state changes)
+    Analytics.timerReset(state.sessionType, state.remainingTime);
+
     state.isRunning = false;
     state.isPaused = false;
     state.pausedTime = null;
@@ -492,12 +847,18 @@
   }
 
   function skipSession() {
+    // Analytics: Timer Skipped
+    Analytics.timerSkipped(state.sessionType, state.remainingTime);
+
     playSound('skip');
     moveToNextSession();
     showToast('Skipped');
   }
 
   function stopTimer() {
+    // Analytics: Timer Stopped
+    Analytics.timerStopped(state.sessionType, state.sessionCount);
+
     state.isRunning = false;
     state.isPaused = false;
     state.pausedTime = null;
@@ -515,6 +876,10 @@
   function completeSession() {
     state.isRunning = false;
     cancelAnimationFrame(state.timerInterval);
+
+    // Analytics: Session Completed (before recordSession modifies state)
+    Analytics.sessionCompleted(state.sessionType, state.totalDuration, state.activeTaskId);
+
     recordSession();
     playSound('complete');
     showFlash(state.sessionType === SESSION_TYPES.WORK ? 'work' : 'break');
@@ -532,6 +897,9 @@
 
     updatePlayPauseIcon();
     updateStats();
+
+    // Update user properties after session
+    Analytics.setUserProperties();
   }
 
   function moveToNextSession() {
@@ -598,17 +966,29 @@
     renderTasks();
     playSound('check');
     showToast('Task added');
+
+    // Analytics: Task Added
+    Analytics.taskAdded(trimmed);
+
     return true;
   }
 
   function toggleTaskComplete(id) {
     const task = state.tasks.find(t => t.id === id);
     if (!task) return;
+    const wasCompleted = task.completed;
     task.completed = !task.completed;
     saveTasks();
     renderTasks();
     updateStats();
     playSound(task.completed ? 'check' : 'uncheck');
+
+    // Analytics: Task Completed/Uncompleted
+    if (task.completed) {
+      Analytics.taskCompleted(task, task.sessionsSpent);
+    } else {
+      Analytics.taskUncompleted(task);
+    }
   }
 
   function editTask(id, newText) {
@@ -619,10 +999,14 @@
     }
     const task = state.tasks.find(t => t.id === id);
     if (task) {
+      const oldText = task.text;
       task.text = trimmed;
       saveTasks();
       renderTasks();
       showToast('Updated');
+
+      // Analytics: Task Edited
+      Analytics.taskEdited(task, oldText, trimmed);
     }
     return true;
   }
@@ -630,6 +1014,11 @@
   function deleteTask(id) {
     const idx = state.tasks.findIndex(t => t.id === id);
     if (idx > -1) {
+      const task = state.tasks[idx];
+
+      // Analytics: Task Deleted (before removing)
+      Analytics.taskDeleted(task);
+
       state.tasks.splice(idx, 1);
       if (state.activeTaskId === id) {
         state.activeTaskId = null;
@@ -648,9 +1037,18 @@
       showToast('Stop timer first');
       return;
     }
-    state.activeTaskId = state.activeTaskId === id ? null : id;
+    const wasSelected = state.activeTaskId === id;
+    state.activeTaskId = wasSelected ? null : id;
     save(STORAGE_KEYS.ACTIVE_TASK, state.activeTaskId);
     renderTasks();
+
+    // Analytics: Task Selected/Deselected
+    if (wasSelected) {
+      Analytics.taskDeselected();
+    } else {
+      const task = state.tasks.find(t => t.id === id);
+      if (task) Analytics.taskSelected(task);
+    }
   }
 
   function saveTasks() {
@@ -832,15 +1230,22 @@
     const expanded = el.historyToggle.getAttribute('aria-expanded') === 'true';
     el.historyToggle.setAttribute('aria-expanded', !expanded);
     el.historyContent.classList.toggle('collapsed', expanded);
+
+    // Analytics: History Toggled
+    Analytics.historyToggled(!expanded);
   }
 
   function clearHistory() {
     if (confirm('Clear all session history?')) {
+      const sessionCount = state.sessions.length;
       state.sessions = [];
       save(STORAGE_KEYS.SESSIONS, []);
       renderHistory();
       updateStats();
       showToast('History cleared');
+
+      // Analytics: History Cleared
+      Analytics.historyCleared(sessionCount);
     }
   }
 
@@ -902,6 +1307,9 @@
 
     showModal(el.customizeModal);
     playSound('click');
+
+    // Analytics: Settings Opened
+    Analytics.settingsOpened();
   }
 
   function closeSettings() {
@@ -918,6 +1326,7 @@
       return;
     }
 
+    const previousDurations = { ...state.durations };
     state.durations = { work, shortBreak, longBreak };
     save(STORAGE_KEYS.DURATIONS, state.durations);
 
@@ -939,6 +1348,9 @@
     closeSettings();
     playSound('check');
     showToast('Saved');
+
+    // Analytics: Settings Saved
+    Analytics.settingsSaved(state.durations, previousDurations);
   }
 
   function resetSettings() {
@@ -946,6 +1358,9 @@
     el.shortBreakDuration.value = DEFAULT_DURATIONS.shortBreak;
     el.longBreakDuration.value = DEFAULT_DURATIONS.longBreak;
     showToast('Reset to defaults');
+
+    // Analytics: Settings Reset
+    Analytics.settingsReset();
   }
 
   function toggleSettingSwitch(btn) {
@@ -956,9 +1371,12 @@
   // ==========================================================================
   // Help Modal
   // ==========================================================================
-  function openHelp() {
+  function openHelp(trigger = 'unknown') {
     showModal(el.helpModal);
     playSound('click');
+
+    // Analytics: Help Opened
+    Analytics.helpOpened(trigger);
   }
 
   function closeHelp() {
@@ -1024,6 +1442,9 @@
     el.bottomSheetOverlay.classList.add('visible');
     el.bottomSheet.classList.add('visible');
     document.body.style.overflow = 'hidden';
+
+    // Analytics: Bottom Sheet Opened
+    Analytics.bottomSheetOpened();
   }
 
   function closeBottomSheet() {
@@ -1034,6 +1455,9 @@
       el.bottomSheet.hidden = true;
       document.body.style.overflow = '';
     }, 300);
+
+    // Analytics: Bottom Sheet Closed
+    Analytics.bottomSheetClosed();
   }
 
   function updateMobileTaskList() {
@@ -1099,8 +1523,15 @@
     const dy = e.changedTouches[0].clientY - state.touchStartY;
 
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 80) {
-      if (dx < 0) skipSession();
-      else resetTimer();
+      if (dx < 0) {
+        skipSession();
+        // Analytics: Swipe Gesture
+        Analytics.swipeGesture('left', 'skip');
+      } else {
+        resetTimer();
+        // Analytics: Swipe Gesture
+        Analytics.swipeGesture('right', 'reset');
+      }
     }
 
     state.touchStartX = null;
@@ -1123,7 +1554,7 @@
     if (e.key.length === 1) {
       state.helpTyped += e.key.toLowerCase();
       if (state.helpTyped.endsWith('help')) {
-        openHelp();
+        openHelp('typed_help');
         state.helpTyped = '';
         return;
       }
@@ -1142,23 +1573,51 @@
       case ' ':
         e.preventDefault();
         startTimer();
+        Analytics.keyboardShortcutUsed('Space', 'start_pause');
         break;
-      case 'r': resetTimer(); break;
-      case 'n': skipSession(); break;
-      case 's': stopTimer(); break;
+      case 'r':
+        resetTimer();
+        Analytics.keyboardShortcutUsed('R', 'reset');
+        break;
+      case 'n':
+        skipSession();
+        Analytics.keyboardShortcutUsed('N', 'skip');
+        break;
+      case 's':
+        stopTimer();
+        Analytics.keyboardShortcutUsed('S', 'stop');
+        break;
       case 'a':
         e.preventDefault();
         el.taskInput.focus();
+        Analytics.keyboardShortcutUsed('A', 'add_task');
         break;
-      case 't': cycleTheme(); break;
-      case 'm': toggleSound(); break;
-      case 'f': toggleFocusMode(); break;
-      case 'c': openSettings(); break;
-      case '?': openHelp(); break;
+      case 't':
+        cycleTheme();
+        Analytics.keyboardShortcutUsed('T', 'theme');
+        break;
+      case 'm':
+        toggleSound();
+        Analytics.keyboardShortcutUsed('M', 'sound');
+        break;
+      case 'f':
+        toggleFocusMode();
+        Analytics.keyboardShortcutUsed('F', 'focus_mode');
+        break;
+      case 'c':
+        openSettings();
+        Analytics.keyboardShortcutUsed('C', 'settings');
+        break;
+      case '?':
+        openHelp('keyboard');
+        break;
       default:
         if (/^[1-9]$/.test(e.key)) {
           const task = state.tasks[parseInt(e.key) - 1];
-          if (task) toggleTaskComplete(task.id);
+          if (task) {
+            toggleTaskComplete(task.id);
+            Analytics.keyboardShortcutUsed(e.key, 'toggle_task');
+          }
         }
     }
   }
@@ -1227,6 +1686,15 @@
     initEvents();
     initKeyboard();
     initMobile();
+
+    // Initialize Analytics
+    Analytics.init();
+    Analytics.setUserProperties();
+
+    // Track page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      Analytics.pageVisibilityChanged(!document.hidden);
+    });
   }
 
   if (document.readyState === 'loading') {
