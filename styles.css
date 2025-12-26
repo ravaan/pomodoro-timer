@@ -157,15 +157,16 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: var(--space-4);
   min-height: calc(100vh - 200px);
-  gap: var(--space-5);
+  gap: var(--space-6);
 }
 
 .timer-container {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: 320px;
+  height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -202,7 +203,7 @@ body {
 
 .timer-time {
   display: block;
-  font-size: var(--text-timer);
+  font-size: 5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -241,11 +242,11 @@ body {
 .session-dot.break { background: var(--success); border-color: var(--success); }
 
 /* Timer Controls */
-.timer-controls { display: flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-5); }
+.timer-controls { display: flex; gap: var(--space-5); align-items: center; }
 
 .control-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-full);
   border: none;
   background: transparent;
@@ -259,19 +260,10 @@ body {
 
 .control-btn:hover {
   color: var(--text);
+  background: var(--bg-tertiary);
 }
 
-.control-btn .icon { width: 18px; height: 18px; }
-
-.control-btn-primary {
-  width: 48px;
-  height: 48px;
-  background: var(--text);
-  color: var(--bg);
-}
-
-.control-btn-primary:hover { opacity: 0.85; }
-.control-btn-primary .icon { width: 20px; height: 20px; }
+.control-btn .icon { width: 22px; height: 22px; }
 
 /* Focus Tasks (hidden by default) */
 .focus-tasks {
@@ -979,21 +971,15 @@ body {
 }
 
 .focus-mode .timer-controls {
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
+  gap: var(--space-5);
 }
 
 .focus-mode .control-btn {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
 }
 
-.focus-mode .control-btn-primary {
-  width: 56px;
-  height: 56px;
-}
-
-.focus-mode .control-btn-primary .icon {
+.focus-mode .control-btn .icon {
   width: 24px;
   height: 24px;
 }
