@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Pomodoro Timer - A productivity timer with task tracking using the 25/5/15 technique">
-  <meta name="theme-color" content="#0f1419">
+  <meta name="description" content="Pomodoro Timer - A productivity timer with task tracking">
+  <meta name="theme-color" content="#0a0a0a">
   <title>Pomodoro Timer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,23 +12,30 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Header with toggles -->
+  <!-- Header -->
   <header class="header">
     <div class="header-left">
       <span class="logo">pomodoro</span>
     </div>
     <div class="header-toggles">
-      <button class="toggle-btn" id="sound-toggle" aria-label="Toggle sound" title="Toggle sound (M)">
-        <svg class="icon icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 18V6l7-4v20l-7-4z"/>
-          <path d="M19 6c2 2 2 10 0 12"/>
-        </svg>
-        <svg class="icon icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
-          <path d="M9 18V6l7-4v20l-7-4z"/>
-          <path d="M19 8l4 4m0-4l-4 4"/>
+      <button class="toggle-btn" id="focus-toggle" aria-label="Toggle focus mode" title="Focus mode">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="3"/>
         </svg>
       </button>
-      <button class="toggle-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme (T)">
+      <button class="toggle-btn" id="sound-toggle" aria-label="Toggle sound" title="Sound (M)">
+        <svg class="icon icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <svg class="icon icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+      </button>
+      <button class="toggle-btn" id="theme-toggle" aria-label="Toggle theme" title="Theme (T)">
         <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
@@ -36,24 +43,19 @@
           <circle cx="12" cy="12" r="5"/>
           <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
         </svg>
-        <svg class="icon icon-focus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
-          <circle cx="12" cy="12" r="10"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
       </button>
     </div>
   </header>
 
-  <!-- Main content -->
+  <!-- Main Content -->
   <main class="main">
     <div class="main-grid">
-      <!-- Left: Timer Section -->
+      <!-- Timer Section -->
       <section class="timer-section" aria-label="Timer">
-        <!-- Circular Progress Ring -->
         <div class="timer-container" id="timer-container">
           <svg class="progress-ring" viewBox="0 0 200 200" aria-hidden="true">
-            <circle class="progress-ring-bg" cx="100" cy="100" r="90" />
-            <circle class="progress-ring-progress" cx="100" cy="100" r="90" />
+            <circle class="progress-ring-bg" cx="100" cy="100" r="90"/>
+            <circle class="progress-ring-progress" cx="100" cy="100" r="90"/>
           </svg>
           <div class="timer-display">
             <time class="timer-time" id="timer-time" aria-live="polite">25:00</time>
@@ -62,7 +64,7 @@
           </div>
         </div>
 
-        <!-- Session Calendar View -->
+        <!-- Session Calendar -->
         <div class="session-calendar" aria-label="Session progress">
           <div class="session-dot" data-session="1"></div>
           <div class="session-dot" data-session="2"></div>
@@ -72,17 +74,31 @@
 
         <!-- Timer Controls -->
         <div class="timer-controls">
-          <button class="control-btn control-btn-primary" id="start-btn" aria-label="Start timer">
-            Start
+          <button class="control-btn" id="reset-btn" aria-label="Reset" title="Reset (R)">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
           </button>
-          <button class="control-btn" id="skip-btn" aria-label="Skip to next session" title="Skip (N)">
-            Skip
+          <button class="control-btn control-btn-primary" id="start-btn" aria-label="Start">
+            <svg class="icon icon-play" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <svg class="icon icon-pause" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none">
+              <rect x="6" y="4" width="4" height="16"/>
+              <rect x="14" y="4" width="4" height="16"/>
+            </svg>
           </button>
-          <button class="control-btn" id="reset-btn" aria-label="Reset current session" title="Reset (R)">
-            Reset
+          <button class="control-btn" id="skip-btn" aria-label="Skip" title="Skip (N)">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <polygon points="5 4 15 12 5 20 5 4"/>
+              <rect x="15" y="4" width="4" height="16"/>
+            </svg>
           </button>
-          <button class="control-btn" id="stop-btn" aria-label="Stop timer completely" title="Stop (S)">
-            Stop
+          <button class="control-btn" id="stop-btn" aria-label="Stop" title="Stop (S)">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <rect x="4" y="4" width="16" height="16" rx="2"/>
+            </svg>
           </button>
         </div>
 
@@ -90,45 +106,37 @@
         <button class="settings-btn" id="customize-btn" aria-label="Settings" title="Settings (C)">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
           <span>Settings</span>
         </button>
+
+        <!-- Focus Mode Task List -->
+        <div class="focus-tasks" id="focus-tasks">
+          <ul class="focus-task-list" id="focus-task-list"></ul>
+        </div>
       </section>
 
-      <!-- Right: Task & Stats Section -->
+      <!-- Side Section -->
       <div class="side-section">
-        <!-- Task Section -->
+        <!-- Tasks -->
         <section class="task-section" aria-label="Tasks">
           <div class="section-header">
             <h2 class="section-title">Tasks</h2>
             <span class="task-count" id="task-count">0</span>
           </div>
-
-          <!-- Add Task -->
           <form class="add-task-form" id="add-task-form">
-            <input
-              type="text"
-              class="task-input"
-              id="task-input"
-              placeholder="Add a task..."
-              maxlength="100"
-              aria-label="New task name"
-            >
-            <button type="submit" class="add-task-btn" aria-label="Add task">
+            <input type="text" class="task-input" id="task-input" placeholder="Add a task..." maxlength="100" aria-label="New task">
+            <button type="submit" class="add-task-btn" aria-label="Add">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 5v14M5 12h14"/>
               </svg>
             </button>
           </form>
-
-          <!-- Task List -->
-          <ul class="task-list" id="task-list" role="list" aria-label="Task list">
-            <!-- Tasks will be rendered here -->
-          </ul>
+          <ul class="task-list" id="task-list"></ul>
         </section>
 
-        <!-- Statistics Section -->
+        <!-- Stats -->
         <section class="stats-section" id="stats-section" aria-label="Statistics">
           <div class="section-header">
             <h2 class="section-title">Stats</h2>
@@ -156,18 +164,16 @@
           </div>
         </section>
 
-        <!-- Session History -->
-        <section class="history-section" id="history-section" aria-label="Session history">
-          <button class="section-header section-toggle" id="history-toggle" aria-expanded="true" aria-controls="history-content">
+        <!-- History -->
+        <section class="history-section" id="history-section" aria-label="History">
+          <button class="section-header section-toggle" id="history-toggle" aria-expanded="true">
             <h2 class="section-title">History</h2>
             <svg class="icon toggle-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M6 9l6 6 6-6"/>
             </svg>
           </button>
           <div class="history-content" id="history-content">
-            <ul class="history-list" id="history-list" role="list" aria-label="Session history list">
-              <!-- History items will be rendered here -->
-            </ul>
+            <ul class="history-list" id="history-list"></ul>
             <p class="empty-state" id="history-empty">No sessions yet</p>
           </div>
         </section>
@@ -181,10 +187,10 @@
   </footer>
 
   <!-- Settings Modal -->
-  <div class="modal-overlay" id="customize-modal" role="dialog" aria-modal="true" aria-labelledby="customize-title" hidden>
+  <div class="modal-overlay" id="customize-modal" role="dialog" aria-modal="true" hidden>
     <div class="modal">
       <div class="modal-header">
-        <h2 class="modal-title" id="customize-title">Settings</h2>
+        <h2 class="modal-title">Settings</h2>
         <button class="modal-close" id="customize-close" aria-label="Close">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12"/>
@@ -193,52 +199,50 @@
       </div>
       <div class="modal-body">
         <div class="settings-group">
-          <h3 class="settings-group-title">Timer Duration</h3>
+          <h3 class="settings-group-title">Duration</h3>
           <div class="settings-row">
-            <label for="work-duration">Work</label>
+            <label>Work</label>
             <div class="input-with-suffix">
               <input type="number" id="work-duration" min="1" max="60" value="25">
               <span class="input-suffix">min</span>
             </div>
           </div>
           <div class="settings-row">
-            <label for="short-break-duration">Short Break</label>
+            <label>Short Break</label>
             <div class="input-with-suffix">
               <input type="number" id="short-break-duration" min="1" max="60" value="5">
               <span class="input-suffix">min</span>
             </div>
           </div>
           <div class="settings-row">
-            <label for="long-break-duration">Long Break</label>
+            <label>Long Break</label>
             <div class="input-with-suffix">
               <input type="number" id="long-break-duration" min="1" max="60" value="15">
               <span class="input-suffix">min</span>
             </div>
           </div>
         </div>
-
         <div class="settings-group">
-          <h3 class="settings-group-title">Notifications</h3>
+          <h3 class="settings-group-title">Alerts</h3>
           <div class="settings-row">
-            <label for="setting-sound">Sound</label>
+            <label>Sound</label>
             <button type="button" class="toggle-switch" id="setting-sound" role="switch" aria-checked="true">
               <span class="toggle-switch-slider"></span>
             </button>
           </div>
           <div class="settings-row">
-            <label for="setting-notifications">Browser Alerts</label>
+            <label>Notifications</label>
             <button type="button" class="toggle-switch" id="setting-notifications" role="switch" aria-checked="false">
               <span class="toggle-switch-slider"></span>
             </button>
           </div>
           <div class="settings-row">
-            <label for="setting-flash">Screen Flash</label>
+            <label>Screen Flash</label>
             <button type="button" class="toggle-switch" id="setting-flash" role="switch" aria-checked="true">
               <span class="toggle-switch-slider"></span>
             </button>
           </div>
         </div>
-
         <div class="settings-group">
           <h3 class="settings-group-title">Data</h3>
           <div class="settings-row">
@@ -248,17 +252,17 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="customize-reset">Reset Defaults</button>
+        <button class="btn btn-ghost" id="customize-reset">Defaults</button>
         <button class="btn btn-primary" id="customize-save">Save</button>
       </div>
     </div>
   </div>
 
   <!-- Help Modal -->
-  <div class="modal-overlay" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+  <div class="modal-overlay" id="help-modal" role="dialog" aria-modal="true" hidden>
     <div class="modal">
       <div class="modal-header">
-        <h2 class="modal-title" id="help-title">Keyboard Shortcuts</h2>
+        <h2 class="modal-title">Shortcuts</h2>
         <button class="modal-close" id="help-close" aria-label="Close">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12"/>
@@ -268,26 +272,26 @@
       <div class="modal-body">
         <div class="shortcuts-list">
           <div class="shortcut-item"><kbd>Space</kbd><span>Start / Pause</span></div>
-          <div class="shortcut-item"><kbd>R</kbd><span>Reset session</span></div>
-          <div class="shortcut-item"><kbd>N</kbd><span>Next session</span></div>
-          <div class="shortcut-item"><kbd>S</kbd><span>Stop timer</span></div>
+          <div class="shortcut-item"><kbd>R</kbd><span>Reset</span></div>
+          <div class="shortcut-item"><kbd>N</kbd><span>Skip</span></div>
+          <div class="shortcut-item"><kbd>S</kbd><span>Stop</span></div>
           <div class="shortcut-item"><kbd>A</kbd><span>Add task</span></div>
           <div class="shortcut-item"><kbd>1-9</kbd><span>Toggle task</span></div>
-          <div class="shortcut-item"><kbd>T</kbd><span>Change theme</span></div>
-          <div class="shortcut-item"><kbd>M</kbd><span>Mute sound</span></div>
+          <div class="shortcut-item"><kbd>T</kbd><span>Theme</span></div>
+          <div class="shortcut-item"><kbd>M</kbd><span>Mute</span></div>
+          <div class="shortcut-item"><kbd>F</kbd><span>Focus mode</span></div>
           <div class="shortcut-item"><kbd>C</kbd><span>Settings</span></div>
-          <div class="shortcut-item"><kbd>Esc</kbd><span>Close modal</span></div>
         </div>
         <div class="gestures-info">
-          <h3>Touch Gestures</h3>
+          <h3>Touch</h3>
           <p>Swipe left to skip, right to reset</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
   <!-- Mobile Bottom Sheet -->
   <div class="bottom-sheet-overlay" id="bottom-sheet-overlay" hidden></div>
@@ -305,7 +309,7 @@
   </div>
 
   <!-- Mobile Task Button -->
-  <button class="mobile-task-btn" id="mobile-task-btn" aria-label="Open tasks" hidden>
+  <button class="mobile-task-btn" id="mobile-task-btn" aria-label="Tasks" hidden>
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M9 11l3 3L22 4"/>
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>

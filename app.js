@@ -40,6 +40,7 @@
     notificationsEnabled: false,
     flashEnabled: true,
     theme: 'dark',
+    focusMode: false,
     tasks: [],
     activeTaskId: null,
     sessions: [],
@@ -104,7 +105,12 @@
       bottomSheet: $('#bottom-sheet'),
       bottomSheetClose: $('#bottom-sheet-close'),
       bottomSheetContent: $('#bottom-sheet-content'),
-      mobileTaskBtn: $('#mobile-task-btn')
+      mobileTaskBtn: $('#mobile-task-btn'),
+      focusToggle: $('#focus-toggle'),
+      focusTasks: $('#focus-tasks'),
+      focusTaskList: $('#focus-task-list'),
+      iconPlay: $('.icon-play'),
+      iconPause: $('.icon-pause')
     };
   }
 
@@ -151,21 +157,66 @@
   function updateThemeIcon() {
     const moonIcon = el.themeToggle.querySelector('.icon-moon');
     const sunIcon = el.themeToggle.querySelector('.icon-sun');
-    const focusIcon = el.themeToggle.querySelector('.icon-focus');
 
     moonIcon.style.display = state.theme === 'dark' ? 'block' : 'none';
     sunIcon.style.display = state.theme === 'light' ? 'block' : 'none';
-    focusIcon.style.display = state.theme === 'focus' ? 'block' : 'none';
   }
 
   function cycleTheme() {
-    const themes = ['dark', 'light', 'focus'];
+    const themes = ['dark', 'light'];
     const idx = themes.indexOf(state.theme);
     state.theme = themes[(idx + 1) % themes.length];
     applyTheme();
     save(STORAGE_KEYS.THEME, state.theme);
     playSound('click');
     showToast(`${state.theme} theme`);
+  }
+
+  // ==========================================================================
+  // Focus Mode
+  // ==========================================================================
+  function toggleFocusMode() {
+    state.focusMode = !state.focusMode;
+    document.body.classList.toggle('focus-mode', state.focusMode);
+    if (state.focusMode) {
+      renderFocusTasks();
+    }
+    playSound('click');
+    showToast(state.focusMode ? 'Focus mode' : 'Normal mode');
+  }
+
+  function renderFocusTasks() {
+    if (!el.focusTaskList) return;
+    el.focusTaskList.innerHTML = '';
+
+    const incompleteTasks = state.tasks.filter(t => !t.completed);
+
+    if (incompleteTasks.length === 0) {
+      el.focusTaskList.innerHTML = '<li class="empty-state" style="padding: var(--space-3); text-align: center; color: var(--text-muted); font-size: var(--text-sm);">No tasks</li>';
+      return;
+    }
+
+    incompleteTasks.forEach(task => {
+      const li = document.createElement('li');
+      li.className = `focus-task-item${task.completed ? ' completed' : ''}`;
+      li.innerHTML = `
+        <button class="task-checkbox${task.completed ? ' checked' : ''}" aria-label="Toggle complete"></button>
+        <span class="task-text">${escapeHtml(task.text)}</span>
+      `;
+
+      li.addEventListener('click', () => {
+        toggleTaskComplete(task.id);
+        renderFocusTasks();
+      });
+
+      el.focusTaskList.appendChild(li);
+    });
+  }
+
+  function updatePlayPauseIcon() {
+    if (!el.iconPlay || !el.iconPause) return;
+    el.iconPlay.style.display = state.isRunning ? 'none' : 'block';
+    el.iconPause.style.display = state.isRunning ? 'block' : 'none';
   }
 
   // ==========================================================================
@@ -385,7 +436,7 @@
     }
 
     state.pausedTime = null;
-    el.startBtn.textContent = 'Pause';
+    updatePlayPauseIcon();
 
     function tick(now) {
       if (!state.isRunning) return;
@@ -418,7 +469,7 @@
     state.isPaused = true;
     state.pausedTime = performance.now();
     cancelAnimationFrame(state.timerInterval);
-    el.startBtn.textContent = 'Resume';
+    updatePlayPauseIcon();
     playSound('pause');
     showToast('Paused');
   }
@@ -430,7 +481,7 @@
     cancelAnimationFrame(state.timerInterval);
     resetTimerDisplay();
     updateTimerDisplay();
-    el.startBtn.textContent = 'Start';
+    updatePlayPauseIcon();
     playSound('click');
     showToast('Reset');
   }
@@ -451,7 +502,7 @@
     resetTimerDisplay();
     updateTimerDisplay();
     updateSessionCalendar();
-    el.startBtn.textContent = 'Start';
+    updatePlayPauseIcon();
     playSound('click');
     showToast('Stopped');
   }
@@ -474,7 +525,7 @@
       setTimeout(startTimer, 1000);
     }
 
-    el.startBtn.textContent = 'Start';
+    updatePlayPauseIcon();
     updateStats();
   }
 
@@ -498,7 +549,7 @@
     resetTimerDisplay();
     updateTimerDisplay();
     updateSessionCalendar();
-    el.startBtn.textContent = 'Start';
+    updatePlayPauseIcon();
   }
 
   function handleVisibilityChange() {
@@ -651,6 +702,7 @@
     });
 
     updateMobileTaskList();
+    if (state.focusMode) renderFocusTasks();
   }
 
   function startEditTask(li, task) {
@@ -1095,6 +1147,7 @@
         break;
       case 't': cycleTheme(); break;
       case 'm': toggleSound(); break;
+      case 'f': toggleFocusMode(); break;
       case 'c': openSettings(); break;
       case '?': openHelp(); break;
       default:
@@ -1126,6 +1179,7 @@
 
     el.themeToggle.addEventListener('click', cycleTheme);
     el.soundToggle.addEventListener('click', toggleSound);
+    el.focusToggle.addEventListener('click', toggleFocusMode);
 
     el.taskForm.addEventListener('submit', (e) => {
       e.preventDefault();
