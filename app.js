@@ -28,10 +28,10 @@
   const Analytics = {
     // Initialize Mixpanel with project token
     init() {
-      // Replace with your Mixpanel project token
-      const MIXPANEL_TOKEN = 'YOUR_MIXPANEL_PROJECT_TOKEN';
+      // Mixpanel project token
+      const MIXPANEL_TOKEN = '534b601e6bd90dc745db38b548bd0624';
 
-      if (typeof mixpanel !== 'undefined' && MIXPANEL_TOKEN !== 'YOUR_MIXPANEL_PROJECT_TOKEN') {
+      if (typeof mixpanel !== 'undefined') {
         mixpanel.init(MIXPANEL_TOKEN, {
           debug: false,
           track_pageview: true,
