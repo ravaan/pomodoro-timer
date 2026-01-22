@@ -18,7 +18,8 @@
     DURATIONS: 'pomodoro-durations',
     TASKS: 'pomodoro-tasks',
     SESSIONS: 'pomodoro-sessions',
-    ACTIVE_TASK: 'pomodoro-active-task'
+    ACTIVE_TASK: 'pomodoro-active-task',
+    TIMER_STATE: 'pomodoro-timer-state'  // Persists running timer across page reloads
   };
   const PROGRESS_CIRCUMFERENCE = 565.48;
 
@@ -466,6 +467,133 @@
     }
   }
 
+  // Save timer state for persistence across page reloads/navigation
+  function saveTimerState() {
+    if (state.isRunning && state.endTime) {
+      save(STORAGE_KEYS.TIMER_STATE, {
+        isRunning: true,
+        endTime: state.endTime,
+        totalDuration: state.totalDuration,
+        sessionType: state.sessionType,
+        sessionCount: state.sessionCount,
+        activeTaskId: state.activeTaskId,
+        savedAt: Date.now()
+      });
+    } else {
+      // Clear timer state when not running
+      clearTimerState();
+    }
+  }
+
+  // Clear persisted timer state
+  function clearTimerState() {
+    localStorage.removeItem(STORAGE_KEYS.TIMER_STATE);
+  }
+
+  // Restore timer state on page load - returns true if timer was restored
+  function restoreTimerState() {
+    const saved = load(STORAGE_KEYS.TIMER_STATE);
+    if (!saved || !saved.isRunning || !saved.endTime) {
+      clearTimerState();
+      return false;
+    }
+
+    const now = Date.now();
+    const remaining = saved.endTime - now;
+
+    // Check if timer should have completed while page was closed
+    if (remaining <= 0) {
+      // Timer completed while page was closed - record the session and move to next
+      state.sessionType = saved.sessionType;
+      state.sessionCount = saved.sessionCount;
+      state.totalDuration = saved.totalDuration;
+      state.activeTaskId = saved.activeTaskId;
+
+      clearTimerState();
+
+      // Record the completed session
+      recordSession();
+
+      // Show notification that session completed while away
+      const isWork = saved.sessionType === SESSION_TYPES.WORK;
+      const msg = isWork ? 'Work session completed while you were away!' : 'Break completed while you were away!';
+      showToast(msg);
+      sendNotification('Pomodoro', msg);
+      playSound('complete');
+
+      // Move to next session
+      moveToNextSession();
+
+      // Auto-start break if it was a work session
+      if (state.sessionType !== SESSION_TYPES.WORK) {
+        setTimeout(startTimer, 1000);
+      }
+
+      return true;
+    }
+
+    // Timer is still running - restore state and resume
+    state.sessionType = saved.sessionType;
+    state.sessionCount = saved.sessionCount;
+    state.totalDuration = saved.totalDuration;
+    state.remainingTime = remaining;
+    state.activeTaskId = saved.activeTaskId;
+    state.endTime = saved.endTime;
+    state.isRunning = false; // Will be set to true by startTimer
+    state.isPaused = false;
+    state.pausedTime = null;
+
+    // Update display before starting
+    resetTimerDisplay();
+    updateTimerDisplay();
+    updateSessionCalendar();
+
+    // Resume the timer
+    showToast(`Resuming ${state.sessionType === SESSION_TYPES.WORK ? 'work' : 'break'} session`);
+
+    // Use setTimeout to allow the UI to initialize first
+    setTimeout(() => {
+      // Manually set up the timer without playing start sound
+      state.isRunning = true;
+      state.startTime = performance.now() - (state.totalDuration - state.remainingTime);
+      state.endTime = Date.now() + state.remainingTime;
+      updatePlayPauseIcon();
+
+      // Start backup interval
+      if (state.backgroundInterval) {
+        clearInterval(state.backgroundInterval);
+      }
+      state.backgroundInterval = setInterval(backgroundTimerCheck, 1000);
+
+      // Start animation frame loop
+      function tick(now) {
+        if (!state.isRunning) return;
+
+        const elapsed = now - state.startTime;
+        state.remainingTime = Math.max(0, state.totalDuration - elapsed);
+
+        if (state.remainingTime <= 10000 && state.remainingTime > 0) {
+          const curr = Math.ceil(state.remainingTime / 1000);
+          const last = Math.ceil((state.remainingTime + 100) / 1000);
+          if (curr !== last && curr <= 10) playSound('tick');
+        }
+
+        updateTimerDisplay();
+
+        if (state.remainingTime <= 0) {
+          completeSession();
+          return;
+        }
+
+        state.timerInterval = requestAnimationFrame(tick);
+      }
+
+      state.timerInterval = requestAnimationFrame(tick);
+    }, 100);
+
+    return true;
+  }
+
   // ==========================================================================
   // Theme
   // ==========================================================================
@@ -703,9 +831,15 @@
   // ==========================================================================
   function initTimer() {
     state.durations = load(STORAGE_KEYS.DURATIONS, DEFAULT_DURATIONS);
-    resetTimerDisplay();
-    updateTimerDisplay();
-    updateSessionCalendar();
+
+    // Try to restore a previously running timer (handles page refresh/navigation)
+    const restored = restoreTimerState();
+    if (!restored) {
+      // No saved timer state - initialize fresh
+      resetTimerDisplay();
+      updateTimerDisplay();
+      updateSessionCalendar();
+    }
   }
 
   function getDuration(type) {
@@ -804,6 +938,9 @@
     }
     state.backgroundInterval = setInterval(backgroundTimerCheck, 1000);
 
+    // Save timer state for persistence across page reloads
+    saveTimerState();
+
     function tick(now) {
       if (!state.isRunning) return;
 
@@ -859,6 +996,7 @@
       clearInterval(state.backgroundInterval);
       state.backgroundInterval = null;
     }
+    clearTimerState(); // Clear persisted state when paused
     updatePlayPauseIcon();
     playSound('pause');
     showToast('Paused');
@@ -880,6 +1018,7 @@
       clearInterval(state.backgroundInterval);
       state.backgroundInterval = null;
     }
+    clearTimerState(); // Clear persisted state when reset
     resetTimerDisplay();
     updateTimerDisplay();
     updatePlayPauseIcon();
@@ -911,6 +1050,7 @@
       clearInterval(state.backgroundInterval);
       state.backgroundInterval = null;
     }
+    clearTimerState(); // Clear persisted state when stopped
     resetTimerDisplay();
     updateTimerDisplay();
     updateSessionCalendar();
@@ -927,6 +1067,7 @@
       clearInterval(state.backgroundInterval);
       state.backgroundInterval = null;
     }
+    clearTimerState(); // Clear persisted state when session completes
 
     // Analytics: Session Completed (before recordSession modifies state)
     Analytics.sessionCompleted(state.sessionType, state.totalDuration, state.activeTaskId);
@@ -982,7 +1123,10 @@
   }
 
   function handleVisibilityChange() {
-    if (!document.hidden && state.isRunning && state.endTime) {
+    if (document.hidden && state.isRunning) {
+      // Tab became hidden - save state immediately (crucial for mobile where beforeunload may not fire)
+      saveTimerState();
+    } else if (!document.hidden && state.isRunning && state.endTime) {
       // Tab became visible - sync timer with actual elapsed time
       const now = Date.now();
       const remaining = state.endTime - now;
@@ -1763,6 +1907,17 @@
     document.addEventListener('visibilitychange', () => {
       Analytics.pageVisibilityChanged(!document.hidden);
     });
+
+    // Save timer state before page unloads (handles refresh, navigation, close)
+    window.addEventListener('beforeunload', saveTimerState);
+    window.addEventListener('pagehide', saveTimerState);
+
+    // Also save periodically while timer is running (every 5 seconds as backup)
+    setInterval(() => {
+      if (state.isRunning) {
+        saveTimerState();
+      }
+    }, 5000);
   }
 
   if (document.readyState === 'loading') {
